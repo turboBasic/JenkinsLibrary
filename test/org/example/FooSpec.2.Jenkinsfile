@@ -1,0 +1,3 @@
+@Library('JenkinsLibrary') _
+
+foo()

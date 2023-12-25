@@ -30,6 +30,7 @@ main() {
     fi
 
     if [ -z "$NO_RUN" ]; then
+        mkdir --parents "$GRADLE_HOME_DIR"
         # shellcheck disable=SC2086
         docker run --rm $DOCKER_OPTIONS \
             --volume "$PWD:/app" \

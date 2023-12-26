@@ -1,0 +1,89 @@
+plugins {
+    id 'groovy'
+    id 'com.adarshr.test-logger'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        setLanguageVersion JavaLanguageVersion.of(11)
+    }
+}
+
+sourceSets {
+    main {
+        groovy {
+            srcDirs = ['src', 'vars']
+        }
+        resources {
+            srcDirs = ['resources']
+        }
+    }
+    test {
+        groovy {
+            srcDirs = ['test']
+            exclude 'resources'
+        }
+        resources {
+            srcDirs =  ['test/resources']
+        }
+    }
+}
+
+dependencies {
+    implementation "org.codehaus.groovy:groovy-all:$groovyVersion"
+    implementation "org.jenkins-ci.main:jenkins-core:$jenkinsVersion"
+    implementation(getJenkinsPlugins()['workflow-cps'])
+
+    testImplementation "com.lesfurets:jenkins-pipeline-unit:$jenkinsPipelineUnitVersion"
+    testImplementation "org.spockframework:spock-core:$spockVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+    getJenkinsPlugins().values().each { pluginGAV ->
+        testRuntimeOnly "${pluginGAV}@jar"
+    }
+}
+
+/*  Tasks */
+
+tasks.named('test') {
+    useJUnitPlatform()
+    maxParallelForks = 4
+
+    final String STACK_WRITE_PROPERTY = 'pipeline.stack.write'
+    final String LOGLEVEL_PROPERTY = 'testlogger.logLevel'
+    systemProperty STACK_WRITE_PROPERTY, System.getProperty(STACK_WRITE_PROPERTY) ?: findProperty(STACK_WRITE_PROPERTY)
+    systemProperty LOGLEVEL_PROPERTY, System.getProperty(LOGLEVEL_PROPERTY) ?: findProperty(LOGLEVEL_PROPERTY)
+
+    testlogger {
+        theme 'mocha-parallel'
+        showStandardStreams true
+        showFullStackTraces true
+    }
+    reports {
+        junitXml {
+            outputPerTestCase = true
+        }
+    }
+}
+
+tasks.named('wrapper') {
+    gradleVersion = project.gradleVersion
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+
+/*  Helpers */
+
+Map getJenkinsPlugins() {
+    jenkinsPluginsVersions.tokenize()
+        .collate(2)
+        .collectEntries {
+            String pluginName = it[0].split(':')[1]
+            String pluginGAV = "${it[0]}:${it[1]}"
+            [(pluginName): pluginGAV]
+        }
+}

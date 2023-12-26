@@ -1,0 +1,17 @@
+pluginManagement {
+    plugins {
+        id 'com.adarshr.test-logger' version testLoggerPluginVersion
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        /*  Alias of https://repo1.maven.org/maven2 a.k.a. https://repo.maven.apache.org/maven2/ */
+        mavenCentral()
+        maven {
+            url 'https://repo.jenkins-ci.org/public'
+        }
+    }
+}
+
+rootProject.name = 'jenkins-library'

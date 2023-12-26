@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "editorconfig.editorconfig",
+    "exiasr.hadolint",
+    "NicolasVuillamy.vscode-groovy-lint",
+    "richardwillis.vscode-gradle",
+    "timonwong.shellcheck"
+  ]
+}

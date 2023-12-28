@@ -1,0 +1,131 @@
+#!/bin/sh
+
+main() {
+    cd "$(dirname "$0")" || exit
+    setDefaults
+    [ $# -eq 0 ] && set -- help
+
+    case "$1" in
+        docker)
+            shift
+            buildDocker "$@"
+            ;;
+        help)
+            shift
+            help "$@"
+            ;;
+        lint)
+            shift
+            lint "$@"
+            ;;
+        sh)
+            shift
+            runShell "$@"
+            ;;
+        test)
+            shift
+            buildDocker
+            runDocker "$@"
+            ;;
+        *)
+            echo "Error: unknown command $1"
+            help
+            exit 1
+    esac
+}
+
+buildDocker() {
+    PUSH_IMAGE=
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --push)
+                shift
+                PUSH_IMAGE=true
+                ;;
+            *)
+                echo "Error: unknown option for docker command: < $1 >"
+                help
+                exit 1
+                ;;
+        esac
+    done
+
+    docker build --rm --tag "$IMAGE_NAME":latest \
+        --build-arg UID="$(id -u)" \
+        --build-arg GID="$(id -g)" \
+        --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+        --build-arg IMAGE_NAME="$IMAGE_NAME" \
+        --build-arg VCS_BRANCH="$VCS_BRANCH" \
+        --build-arg VCS_SHA="$VCS_SHA" \
+        --build-arg VERSION="$VERSION" \
+        .
+    [ -n "$VERSION" ] && docker image tag "$IMAGE_NAME":latest "$IMAGE_NAME:$VERSION"
+    docker image prune --force --filter "label=org.opencontainers.image.title=$IMAGE_NAME"
+
+    if [ "$PUSH_IMAGE" = "true" ]; then
+        docker image push --all-tags "$IMAGE_NAME"
+    fi
+}
+
+help() {
+    warnIfIgnoredArguments "$@"
+
+    awk '$0 == "<!-- begin of help -->", $0 == "<!-- end of help -->"' README.md \
+    |   grep -vF '<!--'
+}
+
+lint() {
+    warnIfIgnoredArguments "$@"
+
+    docker run --rm --env VALIDATE_ALL_CODEBASE=true \
+        --volume "$(pwd):/tmp/lint" \
+        oxsecurity/megalinter-python:v7
+}
+
+runDocker() {
+    # shellcheck disable=SC2086
+    docker run --rm $DOCKER_OPTIONS \
+        --volume "$PWD:/app" \
+        "$IMAGE_NAME" \
+        $DOCKER_COMMAND "$@"
+
+    if [ "$CI" != true ] && [ $# = 0 ]; then
+        echo "Tests execution report: file://$PWD/build/reports/tests/test/index.html"
+    fi
+}
+
+runShell() {
+    warnIfIgnoredArguments "$@"
+
+    DOCKER_COMMAND="/bin/sh"
+    buildDocker
+    runDocker
+}
+
+setDefaults() {
+    IMAGE_NAME=turbobasic/jenkins-library
+    DOCKER_OPTIONS=
+    DOCKER_COMMAND="./gradlew --info --no-daemon clean test"
+    VCS_BRANCH=$(git branch --show-current)
+    [ -z "$VCS_BRANCH" ] && VCS_BRANCH="main"
+    VCS_DIRTY=$(git diff --quiet || echo "-dirty")
+    VCS_SHA="$(git rev-parse HEAD)$VCS_DIRTY"
+    VERSION="$(git describe --tags --dirty 2>/dev/null || true)"
+
+    if [ "$CI" != true ]; then
+        DOCKER_OPTIONS="--interactive --tty"
+    fi
+    true
+}
+
+warnIfIgnoredArguments() {
+    [ $# -gt 0 ] && echo "Warning: command arguments < $* > are ignored"
+    true
+}
+
+
+# Start body of script
+set -o errexit
+[ "$CI" = "true" ] && set -o xtrace
+
+main "$@"

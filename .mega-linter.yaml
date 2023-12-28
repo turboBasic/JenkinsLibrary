@@ -1,0 +1,21 @@
+ENABLE_LINTERS:
+  - GROOVY_NPM_GROOVY_LINT
+  - YAML_YAMLLINT
+  - PYTHON_BLACK
+  - MARKDOWN_MARKDOWNLINT
+  - EDITORCONFIG_EDITORCONFIG_CHECKER
+  - DOCKERFILE_HADOLINT
+
+# npm-groovy-lint configuration
+GROOVY_NPM_GROOVY_LINT_FILE_EXTENSIONS:
+  - .groovy
+GROOVY_NPM_GROOVY_LINT_FILE_NAMES_REGEX:
+  - Jenkinsfile$
+GROOVY_NPM_GROOVY_LINT_ARGUMENTS: --ignorepattern "test/**" --insight --failon error
+
+# editorconfig checker configuration
+EDITORCONFIG_EDITORCONFIG_CHECKER_FILTER_REGEX_EXCLUDE: (?x) >
+    ^\.gradle/.* | ^gradlew$ | ^\.idea/.* | ^test/resources/callStacks/.*
+
+# tell me how long linting is taking
+SHOW_ELAPSED_TIME: true

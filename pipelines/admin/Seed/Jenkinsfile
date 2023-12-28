@@ -1,0 +1,94 @@
+import javaposse.jobdsl.plugin.LookupStrategy
+
+
+withNode {
+    stage('checkout') {
+        checkout scm
+    }
+    stage('seed') {
+        getJobFolders().each {
+            seedFolder it
+        }
+        getDslFiles().each {
+            seedJob it
+        }
+    }
+}
+
+void withNode(Closure body) {
+    node getNodeName(), {
+        ansiColor 'xterm', body
+    }
+}
+
+List<String> getDslFiles() {
+    findFiles(glob: "${getPipelinesPrefix()}**/Jenkinsfile.dsl")
+        .findAll { !it.directory }
+        .collect { it.path }
+        .toSorted()
+}
+
+List<String> getJobFolders() {
+    getDslFiles()
+        .collect {
+            it  .replaceFirst("^${getPipelinesPrefix()}", '')
+                .replaceFirst('([^/]+/)?Jenkinsfile[.]dsl$', '')
+                .replaceFirst('/$', '')
+        }
+        .findAll { it != '' }
+        .toSorted()
+        .toUnique()
+}
+
+void seedJob(String dslFileName) {
+    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+        jobDsl targets: dslFileName,
+            lookupStrategy: getLookupStrategy(),
+            ignoreExisting: false,
+            ignoreMissingFiles: true,
+            removedJobAction: 'DISABLE',
+            removedConfigFilesAction: 'IGNORE',
+            removedViewAction: 'DELETE',
+            unstableOnDeprecation: true,
+            additionalClasspath: 'src',
+            additionalParameters: [
+                WORKSPACE: env.WORKSPACE,
+                DSL_ROOT : env.WORKSPACE,
+            ]
+    }
+}
+
+void seedFolder(String folder) {
+    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+        jobDsl scriptText: folderDslScript(folder),
+            lookupStrategy: getLookupStrategy(),
+            removedJobAction: 'DISABLE',
+            removedConfigFilesAction: 'DELETE',
+            removedViewAction: 'DELETE',
+            additionalClasspath: 'src',
+            additionalParameters: [
+                WORKSPACE: env.WORKSPACE,
+                DSL_ROOT : env.WORKSPACE,
+            ]
+    }
+}
+
+String folderDslScript(String folder) {"""
+    folder('$folder') {
+    }
+""".trim().replaceAll(/\s{2,}/, ' ')}
+
+String getPipelinesPrefix() {
+    'pipelines/'
+}
+
+String getLookupStrategy() {
+    if (LookupStrategy.values().any { params.LOOKUP_STRATEGY == it.name() }) {
+        return params.LOOKUP_STRATEGY
+    }
+    'SEED_JOB'
+}
+
+String getNodeName() {
+    env.NODE_LABEL ?: 'admin'
+}

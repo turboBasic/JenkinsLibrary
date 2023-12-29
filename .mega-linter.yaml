@@ -1,0 +1,32 @@
+ENABLE_LINTERS:
+  - BASH_SHELLCHECK
+  - DOCKERFILE_HADOLINT
+  - EDITORCONFIG_EDITORCONFIG_CHECKER
+  - GROOVY_NPM_GROOVY_LINT
+  - MARKDOWN_MARKDOWNLINT
+  - PYTHON_BLACK
+  - YAML_YAMLLINT
+
+# npm-groovy-lint configuration
+GROOVY_NPM_GROOVY_LINT_FILE_EXTENSIONS:
+  - .dsl
+  - .gradle
+  - .groovy
+  - .Jenkinsfile
+GROOVY_NPM_GROOVY_LINT_FILE_NAMES_REGEX:
+  - Jenkinsfile$
+GROOVY_NPM_GROOVY_LINT_ARGUMENTS: --failon error
+
+# editorconfig checker configuration
+EDITORCONFIG_EDITORCONFIG_CHECKER_FILTER_REGEX_EXCLUDE: >
+    (?x) ^gradlew | ^\.idea/.* | ^test/resources/callStacks/.*
+
+# general options
+CLEAR_REPORT_FOLDER: true
+PRINT_ALL_FILES: true
+PRINT_ALPACA: false
+SHOW_ELAPSED_TIME: true
+
+# reporter options
+CONFIG_REPORTER: false
+UPDATED_SOURCES_REPORTER: false

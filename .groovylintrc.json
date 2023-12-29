@@ -1,0 +1,25 @@
+{
+  "extends": "recommended",
+  "rules": {
+    "basic.DeadCode": "off",
+    "comments.ClassJavadoc": "off",
+    "convention.CompileStatic": "off",
+    "convention.MethodReturnTypeRequired": "off",
+    "convention.NoDef": "off",
+    "convention.VariableTypeRequired": "off",
+    "formatting.ClassStartsWithBlankLine": "info",
+    "formatting.ConsecutiveBlankLines": "off",
+    "groovyism.ExplicitCallToEqualsMethod": "off",
+    "groovyism.GStringExpressionWithinString": "off",
+    "naming.FactoryMethodName": "off",
+    "naming.VariableName": "off",
+    "serialization.SerializableClassMustDefineSerialVersionUID": "info",
+    "size.NestedBlockDepth": {
+      "maxNestedBlockDepth": 10
+    },
+    "unnecessary.UnnecessaryGetter": "off",
+    "unused.UnusedVariable": {
+      "ignoreVariableNames": "_"
+    }
+  }
+}

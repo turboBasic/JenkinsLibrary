@@ -1,3 +1,6 @@
+import groovy.transform.Field
+import java.nio.file.Paths
+
 plugins {
     id 'groovy'
     id 'idea'
@@ -33,19 +36,25 @@ sourceSets {
     }
 }
 
-dependencies {
-    implementation "org.codehaus.groovy:groovy-all:$groovyVersion"
-    implementation "org.jenkins-ci.main:jenkins-core:$jenkinsVersion"
-    implementation(getJenkinsPlugins()['workflow-cps'])
+configurations {
+    testPlugins
+}
 
-    testImplementation "com.lesfurets:jenkins-pipeline-unit:$jenkinsPipelineUnitVersion"
-    testImplementation "org.spockframework:spock-core:$spockVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
-    getJenkinsPlugins().values().each { pluginGAV ->
-        testRuntimeOnly "${pluginGAV}@jar"
+dependencies {
+    implementationDependencies.each { String dependency ->
+        implementation dependency
     }
+    testImplementationDependencies.each { String dependency ->
+        testImplementation dependency
+    }
+    jenkinsPlugins.values().each { String pluginGAV ->
+        testPlugins pluginGAV
+    }
+
+    /* JUnit5 dependencies */
+    testImplementation platform('org.junit:junit-bom:5.9.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
 }
 
 idea {
@@ -58,6 +67,11 @@ idea {
 /*  Tasks */
 
 tasks.named('test') {
+    dependsOn tasks.resolveTestPlugins
+    inputs.files sourceSets.main.allSource.files
+    // set build directory for Jenkins test harness, JENKINS-26331
+    systemProperty 'buildDirectory', buildDir
+
     useJUnitPlatform()
     maxParallelForks = 4
 
@@ -78,6 +92,46 @@ tasks.named('test') {
     }
 }
 
+tasks.register('resolveTestPlugins', Copy) {
+    group 'verification'
+    description 'Collect Jenkins plugins and make them available for Jenkins Test Harness'
+
+    final String destinationDir = "${sourceSets.test.output.resourcesDir}/test-dependencies"
+
+    doFirst {
+        configurations.testPlugins
+            .resolvedConfiguration
+            .resolvedArtifacts
+            .each { ResolvedArtifact artifact ->
+                if (artifact.extension ==~ '[hj]pi') {
+                    addPluginMapping artifact
+                }
+            }
+    }
+
+    from configurations.testPlugins {
+        rename { String filePath ->
+            getPluginsMapping(
+                Paths.get(filePath).getFileName().toString()
+            )
+                .fileName
+        }
+    }
+    include '*.hpi', '*.jpi'
+    into destinationDir
+
+    doLast {
+        new File(destinationDir, 'index').setText(
+            pluginsMapping
+                .values()
+                .collect { JenkinsPlugin plugin -> plugin.name }
+                .toSorted()
+                .join('\n'),
+            'UTF-8'
+        )
+    }
+}
+
 tasks.named('wrapper') {
     gradleVersion = project.gradleVersion
     distributionType = Wrapper.DistributionType.BIN
@@ -86,12 +140,89 @@ tasks.named('wrapper') {
 
 /*  Helpers */
 
-Map getJenkinsPlugins() {
-    jenkinsPluginsVersions.tokenize()
+Map<String, String> getJenkinsPlugins() {
+    property("jenkinsPluginVersions.$jenkinsVersion")
+        .tokenize()
         .collate(2)
-        .collectEntries {
-            String pluginName = it[0].split(':')[1]
-            String pluginGAV = "${it[0]}:${it[1]}"
-            [(pluginName): pluginGAV]
+        .findAll { def (String module, String version) = it
+            !module.startsWith('#')
         }
+        .collectEntries { def (String module, String version) = it
+            [(module.replaceAll(/:$/, '')): version]
+        }
+        .collectEntries { String module, version ->
+            String pluginName = module.split(':').last()
+            [(pluginName): "$module:$version".toString()]
+        }
+}
+
+@Field
+final Map<String, JenkinsPlugin> pluginsMapping = [:]
+
+void addPluginMapping(ResolvedArtifact artifact) {
+    pluginsMapping[artifact.file.name] = new JenkinsPlugin(artifact.name, artifact.extension)
+}
+
+Map<String, JenkinsPlugin> getPluginsMapping() {
+    pluginsMapping
+}
+
+JenkinsPlugin getPluginsMapping(String fileName) {
+    getPluginsMapping()[fileName]
+}
+
+String getTestHarnessVersion() {
+    property("testHarnessVersion.$jenkinsVersion")
+}
+
+List<String> getImplementationDependencies() {
+    List<String> result = [
+        "org.codehaus.groovy:groovy-all:2.4.21",
+        "org.jenkins-ci.main:jenkins-core:$jenkinsVersion",
+        jenkinsPlugins['job-dsl-core'],
+    ]
+    switch (jenkinsVersion) {
+        case '2.277.4':
+            result << 'com.cloudbees:groovy-cps:1.22'
+            break
+        case '2.346.3':
+            result << jenkinsPlugins['workflow-cps']
+            break
+        default:
+            throw new IllegalArgumentException("Unrecognized Jenkins version: $jenkinsVersion")
+    }
+    result
+}
+
+List<String> getTestImplementationDependencies() {
+    List<String> result = [
+        "com.lesfurets:jenkins-pipeline-unit:1.19",
+        "org.spockframework:spock-core:1.3-groovy-2.4",
+        "org.jenkins-ci.main:jenkins-test-harness:${testHarnessVersion}",
+        "org.jenkins-ci.main:jenkins-war:$jenkinsVersion",
+        jenkinsPlugins['job-dsl'],
+        "${jenkinsPlugins['job-dsl']}@jar",
+        "${jenkinsPlugins['structs']}@jar",
+    ]
+    switch (jenkinsVersion) {
+        case '2.277.4':
+            result << 'cglib:cglib-nodep:2.2.2'
+            result << "${jenkinsPlugins['script-security']}@jar"
+            break
+        case '2.346.3':
+            break
+        default:
+            throw new IllegalArgumentException("Unrecognized Jenkins version: $jenkinsVersion")
+    }
+    result
+}
+
+class JenkinsPlugin {
+    final String name
+    final String fileName
+
+    JenkinsPlugin(String name, String extension) {
+        this.name = name
+        this.fileName = "${name}.${extension}"
+    }
 }

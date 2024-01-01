@@ -1,5 +1,7 @@
-folder 'jenkins-library'
-multibranchPipelineJob('jenkins-library/OnCommit') {
+import org.example.jobdsl.MultiBranchPipeline
+
+
+MultiBranchPipeline.create(this, 'jenkins-library/OnCommit') {
     branchSources {
         git {
             id 'JenkinsLibrary'
@@ -16,12 +18,6 @@ multibranchPipelineJob('jenkins-library/OnCommit') {
         pollSCM {
             scmpoll_spec '*/5 * * * *'
             ignorePostCommitHooks false
-        }
-    }
-    orphanedItemStrategy {
-        discardOldItems {
-            daysToKeep 3
-            numToKeep 20
         }
     }
 }

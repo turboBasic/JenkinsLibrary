@@ -1,5 +1,7 @@
-folder 'admin'
-pipelineJob 'admin/Seed', {
+import org.example.jobdsl.Pipeline
+
+
+Pipeline.create(this, 'admin/Seed') {
     parameters {
         choiceParam {
             name 'LOOKUP_STRATEGY'
@@ -10,21 +12,4 @@ pipelineJob 'admin/Seed', {
     properties {
         disableConcurrentBuilds()
     }
-    definition {
-        cpsScm {
-            scm {
-                git {
-                    remote {
-                        url 'https://github.com/turboBasic/JenkinsLibrary'
-                    }
-                    branch 'main'
-                }
-            }
-            scriptPath jenkinsFileName('admin/Seed')
-        }
-    }
-}
-
-String jenkinsFileName(String jobName) {
-    "pipelines/$jobName/Jenkinsfile"
 }

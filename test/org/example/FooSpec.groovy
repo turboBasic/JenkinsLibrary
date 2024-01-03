@@ -31,7 +31,6 @@ class FooSpec extends PipelineSpockTestBase {
             assertCallStackContains('git clone https://example.org/foo')
     }
 
-    @Ignore('Test with inline script which loads library hangs (https://github.com/jenkinsci/JenkinsPipelineUnit/issues/472)')
     def 'Foo performs clone if called from inline script and git is new'() {
         given:
             helper.addShMock('git --version', 'git version 2.40', 0)

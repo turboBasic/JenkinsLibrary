@@ -1,3 +1,4 @@
+folder 'jenkins-library'
 multibranchPipelineJob('jenkins-library/OnCommit') {
     branchSources {
         git {

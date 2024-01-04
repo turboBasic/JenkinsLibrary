@@ -1,3 +1,4 @@
+folder 'admin'
 pipelineJob 'admin/Seed', {
     parameters {
         choiceParam {

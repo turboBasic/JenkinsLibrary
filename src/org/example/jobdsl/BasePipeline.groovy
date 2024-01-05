@@ -13,7 +13,6 @@ abstract class BasePipeline {
     final Closure body
     final Script script
     private String pipelineFullName
-    private String repoRootDir
 
     protected BasePipeline(Script script, String pipelineFullName, Closure body) {
         this.script = script
@@ -24,9 +23,10 @@ abstract class BasePipeline {
     protected abstract Item createJobDslItem(String fullName)
 
     protected final Item run() {
-        setRepoRootDir()
         createParentFolders()
-        println "Generating pipeline name ${getPipelineFullName()}"
+            println "INFO: __FILE__ = ${script.__FILE__}"
+            println "INFO: repo root = ${getRepoRootDir()}"
+            println "INFO: Generating pipeline name ${getPipelineFullName()}"
         createJobDslItem(getPipelineFullName())
     }
 
@@ -35,14 +35,15 @@ abstract class BasePipeline {
             return pipelineFullName
         }
         Path dslScriptDir = Paths.get(script.__FILE__).parent
-        Path pipelineBaseDir = Paths.get(repoRootDir, CONFIG.pipelineDir)
+        Path pipelineBaseDir = Paths.get(getRepoRootDir(), CONFIG.pipelineDir)
         pipelineBaseDir.relativize(dslScriptDir)
     }
 
-    private final void setRepoRootDir() {
-        repoRootDir = 'git rev-parse --show-toplevel'.execute().text.trim()
-        println "__FILE__ = ${script.__FILE__}"
-        println "repo root = $repoRootDir"
+    private final String getRepoRootDir() {
+        if (!script.REPO_ROOT_DIR) {
+            throw new MissingPropertyException("Environment REPO_ROOT_DIR is missing")
+        }
+        script.REPO_ROOT_DIR
     }
 
     private final List<String> createParentFolders() {

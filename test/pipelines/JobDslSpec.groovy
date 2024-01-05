@@ -76,6 +76,7 @@ class JobDslSpec extends Specification {
                 [
                     __FILE__: file.path,
                     JENKINS_URL: 'http://127.0.0.1',
+                    REPO_ROOT_DIR: projectPath,
                 ],
                 new File('.')
             )

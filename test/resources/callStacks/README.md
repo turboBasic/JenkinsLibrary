@@ -1,4 +1,4 @@
-# Test resources directory description
+# Pipeline call stacks directory description
 
 Directory `test/resources/callStacks` contains expected call stacks of Jenkins pipelines and classes.
 Test cases may use them for comparing actual call stacks with expected results.

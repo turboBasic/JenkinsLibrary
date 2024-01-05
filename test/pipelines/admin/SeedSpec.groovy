@@ -22,6 +22,8 @@ class SeedSpec extends PipelineSpockTestBase {
         then:
             printCallStack()
             assertJobStatusSuccess()
+        and:
+            testNonRegression 'Pipeline_works_as_expected'
     }
 
 }

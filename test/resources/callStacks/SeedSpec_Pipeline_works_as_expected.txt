@@ -1,0 +1,13 @@
+   Jenkinsfile.run()
+      Jenkinsfile.node(admin, groovy.lang.Closure)
+         Jenkinsfile.ansiColor(xterm, groovy.lang.Closure)
+            Jenkinsfile.stage(checkout, groovy.lang.Closure)
+               Jenkinsfile.checkout({})
+            Jenkinsfile.stage(seed, groovy.lang.Closure)
+               Jenkinsfile.findFiles({glob=**/Jenkinsfile.dsl})
+               Jenkinsfile.catchError({buildResult=FAILURE, stageResult=FAILURE}, groovy.lang.Closure)
+                  Jenkinsfile.jobDsl({targets=pipelines/Bar/bar/Jenkinsfile.dsl
+pipelines/Foo/foo-1/Jenkinsfile.dsl
+pipelines/Foo/foo-2/Jenkinsfile.dsl
+pipelines/Jenkinsfile.dsl
+pipelines/foo-bar/Jenkinsfile.dsl, lookupStrategy=SEED_JOB, ignoreExisting=false, ignoreMissingFiles=true, removedJobAction=DISABLE, removedConfigFilesAction=IGNORE, removedViewAction=DELETE, unstableOnDeprecation=true, additionalClasspath=src, additionalParameters={WORKSPACE=/workspace, REPO_ROOT_DIR=/workspace}})

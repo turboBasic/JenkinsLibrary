@@ -13,7 +13,7 @@ class OnCommitSpec extends PipelineSpockTestBase {
         then:
             printCallStack()
             assertJobStatusSuccess()
-        then:
+        and:
             testNonRegression 'Pipeline_works_as_expected'
     }
 

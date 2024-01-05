@@ -1,20 +1,27 @@
 package org.example.jobdsl
 
-import javaposse.jobdsl.dsl.jobs.MultibranchWorkflowJob
+import javaposse.jobdsl.dsl.Item
 
 
-final class MultiBranchPipeline extends Pipeline {
+final class MultiBranchPipeline extends BasePipeline {
 
-    private MultiBranchPipeline() {}
+    private MultiBranchPipeline(Script script, String pipelineFullName, Closure body) {
+        super(script, pipelineFullName, body)
+    }
 
-    static void create(Script context, String pipelineFullName, Closure body) {
-        MultibranchWorkflowJob pipeline = context.multibranchPipelineJob(pipelineFullName)
+    static void create(Script script, String pipelineFullName=null, Closure body) {
+        new MultiBranchPipeline(script, pipelineFullName, body)
+            .run()
+    }
+
+    @Override
+    protected Item createJobDslItem(String fullName) {
+        Item jobDslItem = script.multibranchPipelineJob(fullName)
         body.resolveStrategy = Closure.DELEGATE_FIRST
-        body.delegate = pipeline
+        body.delegate = jobDslItem
 
-        createParentFolders context, pipelineFullName
-        pipeline.with {
-            description "Multibranch Pipeline $pipelineFullName"
+        jobDslItem.with {
+            description "Multibranch Pipeline $fullName"
 
             orphanedItemStrategy {
                 discardOldItems {
@@ -26,5 +33,4 @@ final class MultiBranchPipeline extends Pipeline {
             body()
         }
     }
-
 }

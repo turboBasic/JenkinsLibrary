@@ -17,7 +17,7 @@ void withNode(Closure body) {
 }
 
 List<String> getDslFiles() {
-    findFiles(glob: "${getPipelinesPrefix()}**/Jenkinsfile.dsl")
+    findFiles(glob: "**/Jenkinsfile.dsl")
         .findAll { !it.directory }
         .collect { it.path }
         .toSorted()
@@ -36,13 +36,9 @@ void seedJob(String dslFileGlob) {
             additionalClasspath: 'src',
             additionalParameters: [
                 WORKSPACE: env.WORKSPACE,
-                DSL_ROOT : env.WORKSPACE,
+                REPO_ROOT_DIR : env.WORKSPACE,
             ]
     }
-}
-
-String getPipelinesPrefix() {
-    'pipelines/'
 }
 
 String getLookupStrategy() {

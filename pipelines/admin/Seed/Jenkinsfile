@@ -6,12 +6,7 @@ withNode {
         checkout scm
     }
     stage('seed') {
-        getJobFolders().each {
-            seedFolder it
-        }
-        getDslFiles().each {
-            seedJob it
-        }
+        seedJob getDslFiles().join('\n')
     }
 }
 
@@ -28,21 +23,9 @@ List<String> getDslFiles() {
         .toSorted()
 }
 
-List<String> getJobFolders() {
-    getDslFiles()
-        .collect {
-            it  .replaceFirst("^${getPipelinesPrefix()}", '')
-                .replaceFirst('([^/]+/)?Jenkinsfile[.]dsl$', '')
-                .replaceFirst('/$', '')
-        }
-        .findAll { it != '' }
-        .toSorted()
-        .toUnique()
-}
-
-void seedJob(String dslFileName) {
+void seedJob(String dslFileGlob) {
     catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-        jobDsl targets: dslFileName,
+        jobDsl targets: dslFileGlob,
             lookupStrategy: getLookupStrategy(),
             ignoreExisting: false,
             ignoreMissingFiles: true,
@@ -57,26 +40,6 @@ void seedJob(String dslFileName) {
             ]
     }
 }
-
-void seedFolder(String folder) {
-    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-        jobDsl scriptText: folderDslScript(folder),
-            lookupStrategy: getLookupStrategy(),
-            removedJobAction: 'DISABLE',
-            removedConfigFilesAction: 'DELETE',
-            removedViewAction: 'DELETE',
-            additionalClasspath: 'src',
-            additionalParameters: [
-                WORKSPACE: env.WORKSPACE,
-                DSL_ROOT : env.WORKSPACE,
-            ]
-    }
-}
-
-String folderDslScript(String folder) {"""
-    folder('$folder') {
-    }
-""".trim().replaceAll(/\s{2,}/, ' ')}
 
 String getPipelinesPrefix() {
     'pipelines/'

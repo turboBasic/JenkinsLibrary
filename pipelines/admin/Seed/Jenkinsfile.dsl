@@ -1,7 +1,7 @@
-import org.example.jobdsl.Pipeline
+import org.example.jobdsl.WorkflowPipeline
 
 
-Pipeline.create(this, 'admin/Seed') {
+WorkflowPipeline.create(this) {
     parameters {
         choiceParam {
             name 'LOOKUP_STRATEGY'

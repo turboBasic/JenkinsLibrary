@@ -1,7 +1,7 @@
 import org.example.jobdsl.MultiBranchPipeline
 
 
-MultiBranchPipeline.create(this, 'jenkins-library/OnCommit') {
+MultiBranchPipeline.create(this) {
     branchSources {
         git {
             id 'JenkinsLibrary'

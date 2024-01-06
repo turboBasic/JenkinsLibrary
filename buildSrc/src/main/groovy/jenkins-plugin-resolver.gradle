@@ -27,6 +27,9 @@ configurations {
 }
 
 tasks.named('test') {
+    dependsOn tasks.resolveTestPlugins
+    inputs.files sourceSets.main.allSource.files
+
     final String STACK_WRITE_PROPERTY = 'pipeline.stack.write'
     final String LOGLEVEL_PROPERTY = 'testlogger.logLevel'
     final String JENKINS_TEST_HARNESS_BUILD_DIR_PROPERTY = 'buildDirectory'
@@ -48,4 +51,35 @@ tasks.named('test') {
             outputPerTestCase = true
         }
     }
+}
+
+tasks.register('resolveTestPlugins', Copy) {
+    group 'verification'
+    description 'Collect Jenkins plugins and make them available for Jenkins Test Harness'
+
+    final String destinationDir = "${sourceSets.test.output.resourcesDir}/test-dependencies"
+
+    doFirst {
+        Set<ResolvedArtifact> resolvedArtifacts = configurations.testPlugins
+            .resolvedConfiguration
+            .resolvedArtifacts
+        JenkinsPlugins.get().registerResolvedPlugins(resolvedArtifacts)
+    }
+
+    from configurations.testPlugins {
+        rename { String filePath ->
+            JenkinsPlugins.get().pluginFileNameForJenkinsInstance(filePath)
+        }
+    }
+    include '*.hpi', '*.jpi'
+    into destinationDir
+
+    doLast {
+        JenkinsPlugins.get().generatePluginsIndex("${destinationDir}/index")
+    }
+}
+
+tasks.named('wrapper') {
+    gradleVersion = project.gradleVersion
+    distributionType = Wrapper.DistributionType.BIN
 }

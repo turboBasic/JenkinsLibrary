@@ -38,41 +38,7 @@ dependencies {
 /*  Tasks */
 
 tasks.named('test') {
-    dependsOn tasks.resolveTestPlugins
-    inputs.files sourceSets.main.allSource.files
-
     maxParallelForks = 4
-}
-
-tasks.register('resolveTestPlugins', Copy) {
-    group 'verification'
-    description 'Collect Jenkins plugins and make them available for Jenkins Test Harness'
-
-    final String destinationDir = "${sourceSets.test.output.resourcesDir}/test-dependencies"
-
-    doFirst {
-        Set<ResolvedArtifact> resolvedArtifacts = configurations.testPlugins
-            .resolvedConfiguration
-            .resolvedArtifacts
-        JenkinsPlugins.get().registerResolvedPlugins(resolvedArtifacts)
-    }
-
-    from configurations.testPlugins {
-        rename { String filePath ->
-            JenkinsPlugins.get().pluginFileNameForJenkinsInstance(filePath)
-        }
-    }
-    include '*.hpi', '*.jpi'
-    into destinationDir
-
-    doLast {
-        JenkinsPlugins.get().generatePluginsIndex("${destinationDir}/index")
-    }
-}
-
-tasks.named('wrapper') {
-    gradleVersion = project.gradleVersion
-    distributionType = Wrapper.DistributionType.BIN
 }
 
 

@@ -26,6 +26,28 @@ configurations {
     testPlugins
 }
 
+dependencies {
+    /*  Project's Shared library code dependencies */
+    implementation 'org.codehaus.groovy:groovy-all:2.4.21'
+    implementation "org.jenkins-ci.main:jenkins-core:${JenkinsPlugins.get().jenkinsVersion}"
+    implementationDependencies delegate
+
+    /*  JUnit5 dependencies */
+    testImplementation platform('org.junit:junit-bom:5.9.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+
+    /*  Jenkins plugins dependencies */
+    JenkinsPlugins.get().each { String dependency ->
+        testPlugins dependency
+    }
+
+    /*  Dependencies of tests of Shared library and pipeline code */
+    testImplementation 'com.lesfurets:jenkins-pipeline-unit:1.19'
+    testImplementation 'org.spockframework:spock-core:1.3-groovy-2.4'
+    testImplementationDependencies delegate
+}
+
 tasks.named('test') {
     dependsOn tasks.resolveTestPlugins
     inputs.files sourceSets.main.allSource.files
@@ -82,4 +104,53 @@ tasks.register('resolveTestPlugins', Copy) {
 tasks.named('wrapper') {
     gradleVersion = project.gradleVersion
     distributionType = Wrapper.DistributionType.BIN
+}
+
+
+/*  Dependency helpers */
+
+static void implementationDependencies(DependencyHandler context) {
+    List<String> dependencies = [
+        JenkinsPlugins.get()['job-dsl-core'],
+    ]
+
+    switch (JenkinsPlugins.get().jenkinsVersion) {
+        case '2.277.4':
+            dependencies << 'com.cloudbees:groovy-cps:1.22'
+            break
+        case '2.346.3':
+            dependencies << JenkinsPlugins.get()['workflow-cps']
+            break
+        default:
+            throw new IllegalArgumentException("Unrecognized Jenkins version: ${JenkinsPlugins.get().jenkinsVersion}")
+    }
+
+    dependencies.each { String dependency ->
+        context.implementation dependency
+    }
+}
+
+static void testImplementationDependencies(DependencyHandler context) {
+    List<String> dependencies = [
+        "org.jenkins-ci.main:jenkins-test-harness:${JenkinsPlugins.get().testHarnessVersion}",
+        "org.jenkins-ci.main:jenkins-war:${JenkinsPlugins.get().jenkinsVersion}",
+        JenkinsPlugins.get()['job-dsl'],
+        "${JenkinsPlugins.get()['job-dsl']}@jar",
+        "${JenkinsPlugins.get()['structs']}@jar",
+    ]
+
+    switch (JenkinsPlugins.get().jenkinsVersion) {
+        case '2.277.4':
+            dependencies << 'cglib:cglib-nodep:2.2.2'
+            dependencies << "${JenkinsPlugins.get()['script-security']}@jar"
+            break
+        case '2.346.3':
+            break
+        default:
+            throw new IllegalArgumentException("Unrecognized Jenkins version: ${JenkinsPlugins.get().jenkinsVersion}")
+    }
+
+    dependencies.each { String dependency ->
+        context.testImplementation dependency
+    }
 }

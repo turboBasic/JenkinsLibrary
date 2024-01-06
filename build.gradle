@@ -2,21 +2,11 @@ import org.example.JenkinsPlugins
 
 
 plugins {
-    id 'groovy'
-    id 'idea'
-    id 'com.adarshr.test-logger'
+    id 'jenkins-plugin-resolver'
 }
 
 group = 'org.example'
 version = '1.0-SNAPSHOT'
-
-JenkinsPlugins.create(project)
-
-java {
-    toolchain {
-        setLanguageVersion JavaLanguageVersion.of(11)
-    }
-}
 
 sourceSets {
     main {
@@ -38,10 +28,6 @@ sourceSets {
     }
 }
 
-configurations {
-    testPlugins
-}
-
 dependencies {
     implementationDependencies delegate
     testImplementationDependencies delegate
@@ -49,39 +35,13 @@ dependencies {
     junit5Dependencies delegate
 }
 
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-    }
-}
-
 /*  Tasks */
 
 tasks.named('test') {
     dependsOn tasks.resolveTestPlugins
     inputs.files sourceSets.main.allSource.files
-    // set build directory for Jenkins test harness, JENKINS-26331
-    systemProperty 'buildDirectory', buildDir
 
-    useJUnitPlatform()
     maxParallelForks = 4
-
-    final String STACK_WRITE_PROPERTY = 'pipeline.stack.write'
-    final String LOGLEVEL_PROPERTY = 'testlogger.logLevel'
-    systemProperty STACK_WRITE_PROPERTY, System.getProperty(STACK_WRITE_PROPERTY) ?: findProperty(STACK_WRITE_PROPERTY)
-    systemProperty LOGLEVEL_PROPERTY, System.getProperty(LOGLEVEL_PROPERTY) ?: findProperty(LOGLEVEL_PROPERTY)
-
-    testlogger {
-        theme 'mocha-parallel'
-        showStandardStreams true
-        showFullStackTraces true
-    }
-    reports {
-        junitXml {
-            outputPerTestCase = true
-        }
-    }
 }
 
 tasks.register('resolveTestPlugins', Copy) {
@@ -118,7 +78,7 @@ tasks.named('wrapper') {
 
 /*  Helpers */
 
-void implementationDependencies(DependencyHandler context) {
+static void implementationDependencies(DependencyHandler context) {
     List<String> dependencies = [
         "org.codehaus.groovy:groovy-all:2.4.21",
         "org.jenkins-ci.main:jenkins-core:${JenkinsPlugins.get().jenkinsVersion}",

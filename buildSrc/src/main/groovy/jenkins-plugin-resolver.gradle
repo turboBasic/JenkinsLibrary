@@ -1,0 +1,51 @@
+import org.example.JenkinsPlugins
+
+
+plugins {
+    id 'groovy'
+    id 'idea'
+    id 'com.adarshr.test-logger'
+}
+
+JenkinsPlugins.create(project)
+
+java {
+    toolchain {
+        setLanguageVersion JavaLanguageVersion.of(11)
+    }
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+configurations {
+    testPlugins
+}
+
+tasks.named('test') {
+    final String STACK_WRITE_PROPERTY = 'pipeline.stack.write'
+    final String LOGLEVEL_PROPERTY = 'testlogger.logLevel'
+    final String JENKINS_TEST_HARNESS_BUILD_DIR_PROPERTY = 'buildDirectory'
+
+    systemProperty STACK_WRITE_PROPERTY, System.getProperty(STACK_WRITE_PROPERTY) ?: findProperty(STACK_WRITE_PROPERTY)
+    systemProperty LOGLEVEL_PROPERTY, System.getProperty(LOGLEVEL_PROPERTY) ?: findProperty(LOGLEVEL_PROPERTY)
+    systemProperty JENKINS_TEST_HARNESS_BUILD_DIR_PROPERTY, buildDir
+
+    useJUnitPlatform()
+
+    testlogger {
+        theme 'mocha-parallel'
+        showStandardStreams true
+        showFullStackTraces true
+    }
+
+    reports {
+        junitXml {
+            outputPerTestCase = true
+        }
+    }
+}

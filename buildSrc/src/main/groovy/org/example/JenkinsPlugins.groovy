@@ -20,11 +20,12 @@ final class JenkinsPlugins {
     static void create(Project project) {
         if (!instance) {
             instance = new JenkinsPlugins(project)
+            println "\nINFO: Instance of ${instance.getClass().name} is created for project ${project.name} (${project.rootDir})\n"
         } else {
             if (instance.project != project) {
                 throw new IllegalArgumentException("org.example.JenkinsPlugins instance already exists for project ${instance.project}")
             } else {
-                println "WARNING: Multiple events of creating instance of org.example.JenkinsPlugins for the same project detected"
+                println "\nWARNING: Multiple events of creating instance of org.example.JenkinsPlugins for the same project detected\n"
             }
         }
     }
@@ -36,15 +37,22 @@ final class JenkinsPlugins {
         instance
     }
 
+    static void tearDown() {
+        if (instance) {
+            println "\nINFO: Instance of ${instance.getClass().name} is destroyed\n"
+            instance = null
+        }
+    }
+
 
     /*  Public API */
 
-    String getJenkinsVersion() {
-        project.property('jenkinsVersion')
+    static String getJenkinsVersion() {
+        get().project.property('jenkinsVersion')
     }
 
-    String getTestHarnessVersion() {
-        project.property("testHarnessVersion.$jenkinsVersion")
+    static String getTestHarnessVersion() {
+        get().project.property("testHarnessVersion.$jenkinsVersion")
     }
 
     List<String> all() {

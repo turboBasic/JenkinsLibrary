@@ -1,4 +1,5 @@
 plugins {
+    id 'groovy'
     id 'jenkins-plugin-resolver'
 }
 
@@ -21,6 +22,15 @@ sourceSets {
         }
         resources {
             srcDirs =  ['test/resources']
+        }
+    }
+    integrationTest {
+        groovy {
+            srcDirs = ['testIntegration']
+            exclude 'resources'
+        }
+        resources {
+            srcDirs =  ['testIntegration/resources']
         }
     }
 }

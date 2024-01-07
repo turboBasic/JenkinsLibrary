@@ -31,7 +31,9 @@ framework which allows to use more precise and self-explanatory syntax of descri
 
 ### Build and test commands
 
-- `./dev test`: build project and execute tests.  
+- `./dev all-test`: build project and execute Integration and Unit tests.
+- `./dev integration-test`: build project and execute Integration tests.
+- `./dev test`: build project and execute Unit tests.  
   If you provide arguments after `./dev test` command, they are appended to `gradle clean test` command-line and
   resulting command is executed
 - `./dev test --tests "pipelines.admin.**"`: build project and execute all tests in `pipelines.admin` package

@@ -6,6 +6,12 @@ main() {
     [ $# -eq 0 ] && set -- help
 
     case "$1" in
+        all-test)
+            shift
+            buildDocker
+            DOCKER_COMMAND="./gradlew --info --no-daemon clean integrationTest test"
+            runDocker "$@"
+            ;;
         docker)
             shift
             buildDocker "$@"
@@ -13,6 +19,12 @@ main() {
         help)
             shift
             help "$@"
+            ;;
+        integration-test)
+            shift
+            buildDocker
+            DOCKER_COMMAND="./gradlew --info --no-daemon clean integrationTest"
+            runDocker "$@"
             ;;
         lint)
             shift
@@ -25,6 +37,7 @@ main() {
         test)
             shift
             buildDocker
+            DOCKER_COMMAND="./gradlew --info --no-daemon clean test"
             runDocker "$@"
             ;;
         *)
@@ -90,7 +103,8 @@ runDocker() {
         $DOCKER_COMMAND "$@"
 
     if [ "$CI" != true ] && [ $# = 0 ]; then
-        echo "Tests execution report: file://$PWD/build/reports/tests/test/index.html"
+        echo "Tests execution reports:"
+        find build/reports/tests -name index.html -exec echo "file://$(pwd)/{}" \;
     fi
 }
 
@@ -105,7 +119,7 @@ runShell() {
 setDefaults() {
     IMAGE_NAME=turbobasic/jenkins-library
     DOCKER_OPTIONS=
-    DOCKER_COMMAND="./gradlew --info --no-daemon clean test"
+    DOCKER_COMMAND="./gradlew --info --no-daemon clean integrationTest test"
     VCS_BRANCH=$(git branch --show-current)
     [ -z "$VCS_BRANCH" ] && VCS_BRANCH="main"
     VCS_DIRTY=$(git diff --quiet || echo "-dirty")

@@ -1,3 +1,5 @@
+import static org.example.JenkinsPlugins.jenkinsVersion
+import static org.example.JenkinsPlugins.testHarnessVersion
 import org.example.JenkinsPlugins
 
 
@@ -5,9 +7,8 @@ plugins {
     id 'groovy'
     id 'idea'
     id 'com.adarshr.test-logger'
+    id 'com.dorongold.task-tree'
 }
-
-JenkinsPlugins.create(project)
 
 java {
     toolchain {
@@ -22,14 +23,26 @@ idea {
     }
 }
 
+sourceSets {
+    integrationTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
 configurations {
-    testPlugins
+    JenkinsPlugins.tearDown()
+    JenkinsPlugins.create(project)
+
+    testPlugins {}
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
     /*  Project's Shared library code dependencies */
     implementation 'org.codehaus.groovy:groovy-all:2.4.21'
-    implementation "org.jenkins-ci.main:jenkins-core:${JenkinsPlugins.get().jenkinsVersion}"
+    implementation "org.jenkins-ci.main:jenkins-core:$jenkinsVersion"
     implementationDependencies delegate
 
     /*  JUnit5 dependencies */
@@ -46,19 +59,20 @@ dependencies {
     testImplementation 'com.lesfurets:jenkins-pipeline-unit:1.19'
     testImplementation 'org.spockframework:spock-core:1.3-groovy-2.4'
     testImplementationDependencies delegate
+
+    /*  Dependencies of integration tests */
+    integrationTestImplementation "org.jenkins-ci.main:jenkins-test-harness:$testHarnessVersion"
+    integrationTestImplementation "org.jenkins-ci.main:jenkins-war:$jenkinsVersion"
 }
 
 tasks.named('test') {
-    dependsOn tasks.resolveTestPlugins
     inputs.files sourceSets.main.allSource.files
 
     final String STACK_WRITE_PROPERTY = 'pipeline.stack.write'
     final String LOGLEVEL_PROPERTY = 'testlogger.logLevel'
-    final String JENKINS_TEST_HARNESS_BUILD_DIR_PROPERTY = 'buildDirectory'
 
     systemProperty STACK_WRITE_PROPERTY, System.getProperty(STACK_WRITE_PROPERTY) ?: findProperty(STACK_WRITE_PROPERTY)
     systemProperty LOGLEVEL_PROPERTY, System.getProperty(LOGLEVEL_PROPERTY) ?: findProperty(LOGLEVEL_PROPERTY)
-    systemProperty JENKINS_TEST_HARNESS_BUILD_DIR_PROPERTY, buildDir
 
     useJUnitPlatform()
 
@@ -79,7 +93,7 @@ tasks.register('resolveTestPlugins', Copy) {
     group 'verification'
     description 'Collect Jenkins plugins and make them available for Jenkins Test Harness'
 
-    final String destinationDir = "${sourceSets.test.output.resourcesDir}/test-dependencies"
+    final String destinationDir = "${sourceSets.integrationTest.output.resourcesDir}/test-dependencies"
 
     doFirst {
         Set<ResolvedArtifact> resolvedArtifacts = configurations.testPlugins
@@ -101,6 +115,43 @@ tasks.register('resolveTestPlugins', Copy) {
     }
 }
 
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests'
+    group = 'verification'
+
+    dependsOn tasks.resolveTestPlugins
+    shouldRunAfter test
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+
+    final String JENKINS_TEST_HARNESS_BUILD_DIR_PROPERTY = 'buildDirectory'
+    systemProperty JENKINS_TEST_HARNESS_BUILD_DIR_PROPERTY, layout.buildDirectory.get().asFile.toPath().toString()
+
+    useJUnitPlatform()
+
+    testlogger {
+        theme 'mocha-parallel'
+        showStandardStreams true
+        showFullStackTraces true
+    }
+}
+
+tasks.named('check') {
+    dependsOn integrationTest
+}
+
+tasks.register('tearDown') {
+    group 'Build Setup'
+    doLast {
+        JenkinsPlugins.tearDown()
+    }
+}
+
+tasks.findAll { it.group in ['build', 'verification'] }. each {
+    it.finalizedBy 'tearDown'
+}
+
 tasks.named('wrapper') {
     gradleVersion = project.gradleVersion
     distributionType = Wrapper.DistributionType.BIN
@@ -114,7 +165,7 @@ static void implementationDependencies(DependencyHandler context) {
         JenkinsPlugins.get()['job-dsl-core'],
     ]
 
-    switch (JenkinsPlugins.get().jenkinsVersion) {
+    switch (jenkinsVersion) {
         case '2.277.4':
             dependencies << 'com.cloudbees:groovy-cps:1.22'
             break
@@ -122,7 +173,7 @@ static void implementationDependencies(DependencyHandler context) {
             dependencies << JenkinsPlugins.get()['workflow-cps']
             break
         default:
-            throw new IllegalArgumentException("Unrecognized Jenkins version: ${JenkinsPlugins.get().jenkinsVersion}")
+            throw new IllegalArgumentException("Unrecognized Jenkins version: $jenkinsVersion")
     }
 
     dependencies.each { String dependency ->
@@ -132,14 +183,12 @@ static void implementationDependencies(DependencyHandler context) {
 
 static void testImplementationDependencies(DependencyHandler context) {
     List<String> dependencies = [
-        "org.jenkins-ci.main:jenkins-test-harness:${JenkinsPlugins.get().testHarnessVersion}",
-        "org.jenkins-ci.main:jenkins-war:${JenkinsPlugins.get().jenkinsVersion}",
         JenkinsPlugins.get()['job-dsl'],
         "${JenkinsPlugins.get()['job-dsl']}@jar",
         "${JenkinsPlugins.get()['structs']}@jar",
     ]
 
-    switch (JenkinsPlugins.get().jenkinsVersion) {
+    switch (jenkinsVersion) {
         case '2.277.4':
             dependencies << 'cglib:cglib-nodep:2.2.2'
             dependencies << "${JenkinsPlugins.get()['script-security']}@jar"
@@ -147,7 +196,7 @@ static void testImplementationDependencies(DependencyHandler context) {
         case '2.346.3':
             break
         default:
-            throw new IllegalArgumentException("Unrecognized Jenkins version: ${JenkinsPlugins.get().jenkinsVersion}")
+            throw new IllegalArgumentException("Unrecognized Jenkins version: $jenkinsVersion")
     }
 
     dependencies.each { String dependency ->

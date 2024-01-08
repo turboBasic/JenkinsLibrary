@@ -79,11 +79,18 @@ important information about their contents and naming conventions:
 
 - `pipelines`: [Jenkins pipelines](pipelines/README.md)
 - `resources`: [Production resources directory](resources/README.md)
+- `src`: Production source code for Jenkins Shared Library classes. Subdirectories here
+  follow conventional Groovy/Java package layout
+- `test`: Unit-tests' source code. Subdirectories here follow conventional Groovy/Java
+  package layout
 - `test/pipelines`: [Tests for jenkins pipelines](test/pipelines/README.md). Structure of this directory follows
   the structure of `pipelines` directory
 - `test/resources`: [Test resources directory](test/resources/README.md)
 - `test/resources/callStacks`: [Call stack dumps directory](test/resources/callStacks/README.md). This directory
   contains expected call stack dumps for the pipeline tests
+- `testIntegration`: Integration tests' source code
+- `testIntegration/resources`: [Resources directory](testIntegration/resources/README.md) for Integration tests
+- `vars`: Custom steps aka _Global vars_ in Jenkins Shared library
 
 
 ## Contributing

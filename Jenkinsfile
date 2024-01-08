@@ -32,6 +32,9 @@ void unitTest() {
 
 void lint() {
     try {
+        sh '''#!/bin/bash
+            declare -xp
+        '''
         sh './dev lint'
     }
     finally {

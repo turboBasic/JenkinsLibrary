@@ -44,3 +44,6 @@ bin/
 ### MegaLinter reports and logs
 /logback.log
 /megalinter-reports/
+
+### Node
+node_modules/

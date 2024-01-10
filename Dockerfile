@@ -1,11 +1,22 @@
 # syntax=docker/dockerfile:1
 
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE=python:3.12.1-alpine3.19
+ARG ALPINE_VERSION=3.19
+ARG NODE_VERSION=21
+ARG PYTHON_VERSION=3.12.1
+ARG BASE_IMAGE=python:${PYTHON_VERSION}-alpine${ALPINE_VERSION}
+
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} as node
 FROM ${BASE_IMAGE}
+
+COPY --from=node /usr/lib /usr/lib
+COPY --from=node /usr/local/lib /usr/local/lib
+COPY --from=node /usr/local/include /usr/local/include
+COPY --from=node /usr/local/bin /usr/local/bin
 
 ARG GRADLE_VERSION=8.5
 RUN apk add --no-cache \
+        git \
         gradle=~$GRADLE_VERSION \
         openjdk11-jdk \
         shadow
@@ -19,6 +30,7 @@ RUN groupadd --non-unique --gid $GID $USER_NAME && \
 
 USER $USER_NAME
 WORKDIR /app
+RUN git config --global --add safe.directory /app
 ENV GRADLE_USER_HOME=/app/.gradle
 
 CMD ["./gradlew", "--info", "--no-daemon", "clean", "test"]

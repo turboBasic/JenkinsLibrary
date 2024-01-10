@@ -30,6 +30,19 @@ main() {
             shift
             lint "$@"
             ;;
+        lint-commits)
+            shift
+            buildDocker
+            DOCKER_COMMAND="sh -c"
+            if [ -n "$1" ]; then
+                START_COMMIT=$1
+                shift
+            else
+                START_COMMIT="$(git merge-base main "$(git branch --show-current)")"
+            fi
+            warnIfIgnoredArguments "$@"
+            runDocker "npm ci && npx commitlint --from $START_COMMIT --to HEAD --verbose"
+            ;;
         sh)
             shift
             runShell "$@"

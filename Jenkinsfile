@@ -33,6 +33,9 @@ void unitTest() {
 void lint() {
     try {
         sh './dev lint'
+        if (env.BRANCH_NAME != 'main') {
+            sh "./dev lint-commits"
+        }
     }
     finally {
         resetFilePermissions()

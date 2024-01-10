@@ -6,6 +6,7 @@
             Jenkinsfile.parallel({failFast=false, lint=groovy.lang.Closure, unitTest=groovy.lang.Closure})
                Jenkinsfile.stage(lint, groovy.lang.Closure)
                   Jenkinsfile.sh(./dev lint)
+                  Jenkinsfile.sh(./dev lint-commits)
                   Jenkinsfile.sh(sudo find -mindepth 1 -maxdepth 1 -exec chown --preserve-root --recursive jenkins: {} + || true)
                   Jenkinsfile.sh(sudo find -mindepth 1 -maxdepth 1 -exec chmod --preserve-root --recursive u+rw {} + || true)
                   Jenkinsfile.archiveArtifacts({artifacts=megalinter-reports/megalinter.log, linters_logs/ERROR-*, allowEmptyArchive=true})

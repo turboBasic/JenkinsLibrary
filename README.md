@@ -47,6 +47,7 @@ framework which allows to use more precise and self-explanatory syntax of descri
 - `./dev docker [--push]`: only build Docker image. If `--push` switch is provided, Docker image is pushed to Docker Hub
 - `./dev help`: display this help about commands
 - `./dev lint`: lint project with MegaLinter
+- `./dev lint-commits`: lint feature branch commits using [Conventional commit linter](https://commitlint.js.org/#/)
 - `./dev sh`: create development environment and enter shell session inside it. Inside development environment you can
   use Gradle to execute any advanced commands
 
